@@ -7,7 +7,6 @@ Created on 2013-2-17
 import urllib,ConfigParser
 import json
 
-url="https://api.weibo.com/2/users/show.json?uid=1648836677&access_token=2.00xj2anBcbu_3Cdac721cd58Gkbe2B"
 
 def getAccessToken():
     cf=ConfigParser.ConfigParser()
@@ -43,10 +42,12 @@ def getTags(uid,token=None):
         print tag_single
 
 if __name__=="__main__":
+    token=getAccessToken()
+    url="https://api.weibo.com/2/users/show.json?uid=1648836677&access_token="+token
     content=urllib.urlopen(url)
     jsondata=content.read()
     decode_data=json.loads(jsondata)
     #getTags(decode_data["id"])
     #getFollowUsers(decode_data["id"])
-    token=getAccessToken()
+    
     getTags(decode_data["id"],token)
