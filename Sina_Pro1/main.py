@@ -12,7 +12,7 @@ def getConfig():
     
     cf.read("property.config")
     
-    ops=cf.options("app info")
+    ops=cf.options("web app info")
 
 def get_access_token(app_key,app_secret,callback_url):
     client=APIClient(app_key=app_key,app_secret=app_secret, redirect_uri=callback_url)
@@ -22,7 +22,7 @@ def get_access_token(app_key,app_secret,callback_url):
     code=raw_input("input code")
     r=client.request_access_token(code)
     access_token=r.access_token
-    expire_in=r.expire_in
+    expire_in=r.expires_in
     print 'access_token:',access_token
     print 'expire in: ',expire_in
     
@@ -33,9 +33,9 @@ if __name__=="__main__":
     cf=ConfigParser.ConfigParser()
     cf.read("property.config")
     
-    APP_KEY=cf.get("app info","app_key")
-    APP_SECRET=cf.get("app info","app_secret")
-    CALL_URL=cf.get("app info","callback_url")
+    APP_KEY=cf.get("web app info","app_key")
+    APP_SECRET=cf.get("web app info","app_secret")
+    CALL_URL=cf.get("web app info","callback_url")
     
     access_token,expire_in=get_access_token(app_key=APP_KEY,app_secret=APP_SECRET,
                            callback_url=CALL_URL)
