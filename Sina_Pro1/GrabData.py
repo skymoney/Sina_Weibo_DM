@@ -9,6 +9,7 @@ import json
 from py2neo import neo4j,cypher
 
 NEO_ROOT="http://localhost:7474/db/data/"
+graph_db=neo4j.GraphDatabaseService(NEO_ROOT)
 
 def getAccessToken():
     cf=ConfigParser.ConfigParser()
@@ -56,10 +57,32 @@ def getTags(uid,token=None):
     content=urllib.urlopen(URL+"?"+params)
     jsondata=json.loads(content.read())
     return jsondata
-        
-def InserDataBase():
+    
+def DbExist(uid):
+    query="start n=node:id(id="+uid+") return n;"
+    #data,metadata=cypher.execute(graph_db, query)
+    #print data
+    return False
+      
+def InsertDataBase(userInfo):
     #insert data into databsae
-    pass
+    #format:list
+    #[id,name,location,[tag,weight],...]    
+    tag_index=3
+    tag_info=""
+    while tag_index<len(userInfo):
+        tag_single=userInfo[tag_index]
+        tag_info+=tag_single[0]+"#"+str(tag_single[1])+"$"
+        tag_index+=1
+    if DbExist(userInfo[0])<>True:
+        node=graph_db.create(
+        {'id':userInfo[0],
+         'name':userInfo[1],
+         'location':userInfo[2],
+         'tag_info':tag_info[0:len(tag_info)-1]})
+    
+    print 'current user insert done...'
+    
 
 def grabdata(uid,token=None):
     #start grab data given one uid
@@ -67,7 +90,8 @@ def grabdata(uid,token=None):
     id_set.append(uid)
     index=0
     while index<len(id_set):
-        current_id=id_set[index]        
+        current_id=id_set[index]  
+        userInfo=[]      
         #add uncrawed id into id_list
         '''
         if len(id_set)<=50:
@@ -77,17 +101,24 @@ def grabdata(uid,token=None):
                     id_set.append(str(current_friend_id))
         '''
         content=getUserInfo(current_id,token)
-        print content['name'],content['location']
+        userInfo.append(content['idstr'])
+        userInfo.append(content['name'])
+        userInfo.append(content['location'])
         tag_data=getTags(current_id,token)
         #print tag_data
+        
         for tag_single in tag_data:
-            for tag in tag_single:
-                print tag,tag_single[tag]
+            tag_single_list=[]
+            for tag_key in tag_single:                
+                tag_single_list.append(tag_single[tag_key])
+            userInfo.append(tag_single_list)
+        InsertDataBase(userInfo)
         index+=1
-    pass
+    
 
 if __name__=="__main__":
     token=getAccessToken()
     #uid=1648836677
     uid="1648836677"
     grabdata(uid,token)
+    #DbExist(uid)
