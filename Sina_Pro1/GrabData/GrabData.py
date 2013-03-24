@@ -6,15 +6,14 @@ Created on 2013-2-17
 '''
 import urllib,ConfigParser
 import json
-from py2neo import neo4j,cypher
 
-NEO_ROOT="http://localhost:7474/db/data/"
-graph_db=neo4j.GraphDatabaseService(NEO_ROOT)
+from Neo4jUtil import Neo4jUtil
+
 
 def getAccessToken():
     cf=ConfigParser.ConfigParser()
-    cf.read("property.config")
-    token=cf.get("app info","token")
+    cf.read("../property.config")
+    token=cf.get("ad app info","token")
     return token
 
 def IsExist(dataList,uid):
@@ -22,6 +21,8 @@ def IsExist(dataList,uid):
         return False
     else:
         return True
+
+#all weibo ops to get data needed
 
 def getUserInfo(uid,token=None):
     #get user info given uid
@@ -58,48 +59,19 @@ def getTags(uid,token=None):
     jsondata=json.loads(content.read())
     return jsondata
     
-def DbExist(uid):
-    query="start n=node:id(id="+uid+") return n;"
-    #data,metadata=cypher.execute(graph_db, query)
-    #print data
-    return False
-      
-def InsertDataBase(userInfo):
-    #insert data into databsae
-    #format:list
-    #[id,name,location,[tag,weight],...]    
-    tag_index=3
-    tag_info=""
-    while tag_index<len(userInfo):
-        tag_single=userInfo[tag_index]
-        tag_info+=tag_single[0]+"#"+str(tag_single[1])+"$"
-        tag_index+=1
-    if DbExist(userInfo[0])<>True:
-        node=graph_db.create(
-        {'id':userInfo[0],
-         'name':userInfo[1],
-         'location':userInfo[2],
-         'tag_info':tag_info[0:len(tag_info)-1]})
-    
-    print 'current user insert done...'
-    
 
+
+    
+#grap data
 def grabdata(uid,token=None):
     #start grab data given one uid
     id_set=[]
     id_set.append(uid)
     index=0
-    while index<len(id_set):
+    while index<len(id_set) and index<50:   #in test env, small amount is enough
         current_id=id_set[index]  
         userInfo=[]      
         #add uncrawed id into id_list
-        '''
-        if len(id_set)<=50:
-            current_id_friends=getFriends(uid,token)
-            for current_friend_id in current_id_friends:
-                if IsExist(id_set,current_friend_id)<>True:
-                    id_set.append(str(current_friend_id))
-        '''
         content=getUserInfo(current_id,token)
         userInfo.append(content['idstr'])
         userInfo.append(content['name'])
@@ -112,9 +84,61 @@ def grabdata(uid,token=None):
             for tag_key in tag_single:                
                 tag_single_list.append(tag_single[tag_key])
             userInfo.append(tag_single_list)
-        InsertDataBase(userInfo)
+        Neo4jUtil.InsertDataBase(userInfo)
+        print 'current user '+current_id+' done....'
+        #add more ids into Id Set
+        dealFriends(uid,token)
+        print 'friends done....'
+        dealFollowers(uid,token)
         index+=1
-    
+
+def dealFriends(uid,token=None):
+    friends_ids=getFriends(uid,token)
+    try:
+        for friendId in friends_ids:
+            id=str(friendId)
+            userInfo=[]
+            content=getUserInfo(id,token)
+            userInfo.append(content['idstr'])
+            userInfo.append(content['name'])
+            userInfo.append(content['location'])
+            tag_data=getTags(id,token)
+            #print tag_data
+            
+            for tag_single in tag_data:
+                tag_single_list=[]
+                for tag_key in tag_single:                
+                    tag_single_list.append(tag_single[tag_key])
+                userInfo.append(tag_single_list)
+            node=Neo4jUtil.InsertDataBase(userInfo)
+            
+            Neo4jUtil.creatRelation(id,uid,"Follows")
+    except:
+        pass      
+
+def dealFollowers(uid,token=None):
+    follow_ids=getFollowUsers(uid,token)
+    try:
+        for followId in follow_ids:
+            id=str(followId)
+            userInfo=[]
+            content=getUserInfo(id,token)
+            userInfo.append(content['idstr'])
+            userInfo.append(content['name'])
+            userInfo.append(content['location'])
+            tag_data=getTags(id,token)
+            #print tag_data
+            
+            for tag_single in tag_data:
+                tag_single_list=[]
+                for tag_key in tag_single:                
+                    tag_single_list.append(tag_single[tag_key])
+                userInfo.append(tag_single_list)
+            node=Neo4jUtil.InsertDataBase(userInfo)
+            
+            Neo4jUtil.creatRelation(uid,id,"Follows")
+    except:
+        pass
 
 if __name__=="__main__":
     token=getAccessToken()
@@ -122,3 +146,5 @@ if __name__=="__main__":
     uid="1648836677"
     grabdata(uid,token)
     #DbExist(uid)
+    #data=getFollowUsers(uid,token)
+    #print data
