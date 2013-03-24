@@ -1,3 +1,8 @@
 Sina_Pro1/property.config
 Sina_Pro1/property.config
 Sina_Pro1/property.config
+Sina_Pro1/property.config
+*.log
+*.pot
+*.pyc
+local_settings.py
