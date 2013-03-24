@@ -33,12 +33,13 @@ if __name__=="__main__":
     cf=ConfigParser.ConfigParser()
     cf.read("property.config")
     
-    APP_KEY=cf.get("web app info","app_key")
-    APP_SECRET=cf.get("web app info","app_secret")
-    CALL_URL=cf.get("web app info","callback_url")
+    APP_KEY=cf.get("ad app info","app_key")
+    APP_SECRET=cf.get("ad app info","app_secret")
+    CALL_URL=cf.get("ad app info","callback_url")
     
     access_token,expire_in=get_access_token(app_key=APP_KEY,app_secret=APP_SECRET,
                            callback_url=CALL_URL)
+    print access_token,expire_in
     
     
     
